@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="renderer" content="webkit" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>24 点</title>
+    <style>
+        /** {
+            color: #fff !important;
+        }*/
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            padding: 20px 15px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .btn-random {
+            padding: 8px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            background: #667eea;
+            color: white;
+        }
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .input-group input {
+            height: 70px;
+            font-size: 32px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            outline: none;
+            background: #fff;
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        .input-group input:focus {
+            border-color: #667eea;
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex: 1;
+            padding: 14px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .btn-clear {
+            background: #f0f0f0;
+            color: #666;
+        }
+        .btn-clear:active {
+            background: #e0e0e0;
+        }
+        .btn-verify {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-verify:active {
+            opacity: 0.9;
+        }
+
+        .result {
+            flex: 1;
+            height: 0;
+            padding: 15px;
+            line-height: 1.8;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            word-break: break-all;
+            overflow: auto;
+        }
+        .success {
+            color: #2e7d32;
+            background: #e8f5e9;
+        }
+        .error {
+            color: #c62828;
+            background: #ffebee;
+        }
+        .answer {
+            color: #1565c0;
+            background: #e3f2fd;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>24 点</h1>
+            <button class="btn-random" onclick="randomNums()">随机生成</button>
+        </div>
+        <div class="input-group">
+            <input type="number" min="1" id="num1">
+            <input type="number" min="1" id="num2">
+            <input type="number" min="1" id="num3">
+            <input type="number" min="1" id="num4">
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-clear" onclick="clearInputs()">清空</button>
+            <button class="btn btn-verify" onclick="verify()">验证</button>
+        </div>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        (function() {
+            var DOM = {
+                num1: document.getElementById('num1'),
+                num2: document.getElementById('num2'),
+                num3: document.getElementById('num3'),
+                num4: document.getElementById('num4'),
+                result: document.getElementById('result')
+            };
+            //运算符
+            var OPS = ['+', '-', '*', '/'];
+            //目标值
+            var TARGET = 24;
+            //数字最大值
+            var MAX_NUM = 13;
+            //浮点数比较精度
+            var EPS = 1e-9;
+            //当前解法列表
+            var solutions = [];
+
+            //四则运算
+            function calc(a, b, op) {
+                if (op === '+') return a + b;
+                if (op === '-') return a - b;
+                if (op === '*') return a * b;
+                if (op === '/' && b !== 0) return a / b;
+                return NaN;
+            }
+
+            //数组全排列
+            function permute(arr) {
+                if (arr.length <= 1) {
+                    return [arr.slice()];
+                }
+                var result = [];
+                for (var i = 0; i < arr.length; i++) {
+                    var rest = arr.slice(0, i).concat(arr.slice(i + 1));
+                    permute(rest).forEach(function(p) {
+                        result.push([arr[i]].concat(p));
+                    });
+                }
+                return result;
+            }
+
+            //求解24点
+            function solve(nums) {
+                var found = [];
+                //遍历参与运算的数字
+                permute(nums).forEach(function(p) {
+                    var a = p[0],
+                        b = p[1],
+                        c = p[2],
+                        d = p[3];
+                    //遍历所有运算符组合
+                    OPS.forEach(function(op1) {
+                        OPS.forEach(function(op2) {
+                            OPS.forEach(function(op3) {
+                                //5种括号组合方式
+                                var exprs = [{
+                                    expr: '((' + a + op1 + b + ')' + op2 + c + ')' + op3 + d,
+                                    value: calc(calc(calc(a, b, op1), c, op2), d, op3)
+                                },
+                                {
+                                    expr: '(' + a + op1 + b + ')' + op2 + '(' + c + op3 + d + ')',
+                                    value: calc(calc(a, b, op1), calc(c, d, op3), op2)
+                                },
+                                {
+                                    expr: '(' + a + op1 + '(' + b + op2 + c + '))' + op3 + d,
+                                    value: calc(calc(a, calc(b, c, op2), op1), d, op3)
+                                },
+                                {
+                                    expr: a + op1 + '((' + b + op2 + c + ')' + op3 + d + ')',
+                                    value: calc(a, calc(calc(b, c, op2), d, op3), op1)
+                                },
+                                {
+                                    expr: a + op1 + '(' + b + op2 + '(' + c + op3 + d + '))',
+                                    value: calc(a, calc(b, calc(c, d, op3), op2), op1)
+                                }];
+                                //检查结果是否为24
+                                exprs.forEach(function(item) {
+                                    if (Math.abs(item.value - TARGET) < EPS) {
+                                        found.push(item.expr);
+                                    }
+                                });
+                            });
+                        });
+                    });
+                });
+                return found;
+            }
+
+            //AST抽象语法树工具
+            var AST = {
+                //解析表达式为AST
+                parse: function(expr) {
+                    var pos = 0;
+                    //解析加减法
+                    function parse() {
+                        var left = parseTerm();
+                        while (pos < expr.length && (expr[pos] === '+' || expr[pos] === '-')) {
+                            var op = expr[pos++];
+                            left = { type: 'binop', op: op, left: left, right: parseTerm() };
+                        }
+                        return left;
+                    }
+                    //解析乘除法
+                    function parseTerm() {
+                        var left = parseFactor();
+                        while (pos < expr.length && (expr[pos] === '*' || expr[pos] === '/')) {
+                            var op = expr[pos++];
+                            left = { type: 'binop', op: op, left: left, right: parseFactor() };
+                        }
+                        return left;
+                    }
+                    //解析数字或括号
+                    function parseFactor() {
+                        if (expr[pos] === '(') {
+                            pos++;
+                            var node = parse();
+                            pos++;
+                            return node;
+                        }
+                        var num = '';
+                        while (pos < expr.length && /\d/.test(expr[pos])) {
+                            num += expr[pos++];
+                        }
+                        return { type: 'num', value: parseInt(num) };
+                    }
+                    return parse();
+                },
+                //标准化AST，交换律排序
+                normalize: function(node) {
+                    if (node.type === 'num') return node;
+                    var left = AST.normalize(node.left);
+                    var right = AST.normalize(node.right);
+                    //加法和乘法满足交换律，按字符串排序
+                    if ((node.op === '+' || node.op === '*') &&
+                        AST.str(left) > AST.str(right)) {
+                        var tmp = left;
+                        left = right;
+                        right = tmp;
+                    }
+                    return { type: 'binop', op: node.op, left: left, right: right };
+                },
+                //AST转字符串
+                str: function(node) {
+                    return node.type === 'num' ?
+                        String(node.value) :
+                        '(' + AST.str(node.left) + node.op + AST.str(node.right) + ')';
+                }
+            };
+
+            //去重，交换律视为同一种解
+            function uniqueSolutions(arr) {
+                var seen = {};
+                return arr.filter(function(expr) {
+                    var normalized = AST.str(AST.normalize(AST.parse(expr)));
+                    if (seen[normalized]) {
+                        return false;
+                    }
+                    else {
+                        seen[normalized] = true;
+                        return true;
+                    }
+                });
+            }
+
+            //获取输入的4个数字
+            function getNumbers() {
+                var nums = [DOM.num1, DOM.num2, DOM.num3, DOM.num4]
+                    .map(function(el) {
+                        return parseInt(el.value);
+                    });
+                return nums.every(function(n) {
+                    return !isNaN(n) && n >= 1 && n <= MAX_NUM;
+                }) ? nums : null;
+            }
+
+            //设置结果显示
+            function setResult(type, html, onclick) {
+                DOM.result.className = 'result ' + type;
+                DOM.result.innerHTML = html;
+                DOM.result.onclick = onclick || null;
+            }
+
+            //显示答案
+            function showAnswer() {
+                setResult('answer', uniqueSolutions(solutions).join('<br>'));
+            }
+
+            //清空
+            window.clearInputs = function() {
+                DOM.num1.value =
+                    DOM.num2.value =
+                    DOM.num3.value =
+                    DOM.num4.value = '';
+                DOM.result.className = 'result';
+                DOM.result.innerHTML = '';
+                solutions = [];
+            };
+
+            //随机生成有解的数字
+            window.randomNums = function() {
+                var nums, result;
+                do {
+                    nums = [];
+                    for (var i = 0; i < 4; i++) {
+                        nums.push(Math.floor(Math.random() * MAX_NUM) + 1);
+                    }
+                    result = solve(nums);
+                } while (result.length === 0);
+                DOM.num1.value = nums[0];
+                DOM.num2.value = nums[1];
+                DOM.num3.value = nums[2];
+                DOM.num4.value = nums[3];
+                solutions = result;
+                setResult('success', '有解，点击查看答案', showAnswer);
+            };
+
+            //验证
+            window.verify = function() {
+                var nums = getNumbers();
+                if (!nums) {
+                    return setResult('error', '请输入1-' + MAX_NUM + '之间的整数');
+                }
+                solutions = solve(nums);
+                if (solutions.length > 0) {
+                    setResult('success', '有解，点击查看答案', showAnswer);
+                }
+                else {
+                    setResult('error', '无解');
+                }
+            };
+
+            //设置input的max属性
+            [DOM.num1, DOM.num2, DOM.num3, DOM.num4].forEach(function(el) {
+                el.max = MAX_NUM;
+            });
+        })();
+    </script>
+</body>
+
+</html>
