@@ -291,6 +291,34 @@
                         left = right;
                         right = tmp;
                     }
+                
+                    //加法和乘法满足结合律，扁平化处理
+                    if (node.op === '+' || node.op === '*') {
+                        //扁平化左子树
+                        if (left.type === 'binop' && left.op === node.op) {
+                            var flatLeft = [];
+                            function flatten(n) {
+                                if (n.type === 'binop' && n.op === node.op) {
+                                    flatten(n.left);
+                                    flatten(n.right);
+                                } else {
+                                    flatLeft.push(n);
+                                }
+                            }
+                            flatten(left);
+                            flatLeft.push(right);
+                            //按字符串排序
+                            flatLeft.sort(function(a, b) {
+                                return AST.str(a) > AST.str(b) ? 1 : -1;
+                            });
+                            //重建标准化的树
+                            left = flatLeft[0];
+                            for (var i = 1; i < flatLeft.length; i++) {
+                                left = { type: 'binop', op: node.op, left: left, right: flatLeft[i] };
+                            }
+                            return left;
+                        }
+                    }
                     return { type: 'binop', op: node.op, left: left, right: right };
                 },
                 //AST转字符串
