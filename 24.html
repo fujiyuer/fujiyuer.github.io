@@ -36,7 +36,6 @@
             align-items: center;
             gap: 16px;
             margin-bottom: 25px;
-            flex-wrap: wrap;
         }
         h1 {
             color: #333;
@@ -53,46 +52,6 @@
             background: #667eea;
             color: white;
         }
-        .toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-        .toggle input {
-            display: none;
-        }
-        .toggle-slider {
-            position: relative;
-            width: 40px;
-            height: 20px;
-            background: #ddd;
-            border-radius: 10px;
-            transition: background 0.3s;
-        }
-        .toggle-slider:before {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 16px;
-            height: 16px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.3s;
-        }
-        .toggle input:checked + .toggle-slider {
-            background: #667eea;
-        }
-        .toggle input:checked + .toggle-slider:before {
-            transform: translateX(20px);
-        }
-        .toggle-label {
-            font-size: 14px;
-            font-weight: 500;
-            color: #666;
-        }
-
         .input-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -176,11 +135,6 @@
         <div class="header">
             <h1>24 点</h1>
             <button class="btn-random" onclick="randomNums()">随机生成</button>
-            <label class="toggle">
-                <input type="checkbox" id="fractionToggle" onchange="toggleFraction()">
-                <span class="toggle-slider"></span>
-                <span class="toggle-label">启用分数</span>
-            </label>
         </div>
         <div class="input-group">
             <input type="number" min="1" id="num1">
@@ -202,11 +156,8 @@
                 num2: document.getElementById('num2'),
                 num3: document.getElementById('num3'),
                 num4: document.getElementById('num4'),
-                result: document.getElementById('result'),
-                fractionToggle: document.getElementById('fractionToggle')
+                result: document.getElementById('result')
             };
-            //是否启用分数
-            var enableFraction = false;
             //运算符
             var OPS = ['+', '-', '*', '/'];
             //目标值
@@ -279,45 +230,7 @@
                                 //检查结果是否为24
                                 exprs.forEach(function(item) {
                                     if (Math.abs(item.value - TARGET) < EPS) {
-                                        //如果启用分数，直接添加
-                                        if (enableFraction) {
-                                            found.push(item.expr);
-                                        } else {
-                                            //如果禁用分数，检查中间结果是否为整数
-                                            var valid = true;
-                                            try {
-                                                //简单检查：如果表达式包含除法，可能产生分数
-                                                if (expr.indexOf('/') !== -1) {
-                                                    //更严格的检查：计算所有中间结果
-                                                    var stack = [];
-                                                    var tokens = expr.match(/\d+|[+\-*/()]/g);
-                                                    for (var j = 0; j < tokens.length; j++) {
-                                                        var token = tokens[j];
-                                                        if (!isNaN(token)) {
-                                                            stack.push(parseInt(token));
-                                                        } else if (token !== '(' && token !== ')') {
-                                                            if (stack.length < 2) {
-                                                                valid = false;
-                                                                break;
-                                                            }
-                                                            var b = stack.pop();
-                                                            var a = stack.pop();
-                                                            var res = calc(a, b, token);
-                                                            if (isNaN(res) || Math.abs(res - Math.round(res)) > EPS) {
-                                                                valid = false;
-                                                                break;
-                                                            }
-                                                            stack.push(res);
-                                                        }
-                                                    }
-                                                }
-                                                if (valid) {
-                                                    found.push(item.expr);
-                                                }
-                                            } catch (e) {
-                                                //解析错误，跳过
-                                            }
-                                        }
+                                        found.push(item.expr);
                                     }
                                 });
                             });
@@ -496,11 +409,6 @@
                 else {
                     setResult('error', '无解');
                 }
-            };
-            
-            //切换分数启用状态
-            window.toggleFraction = function() {
-                enableFraction = DOM.fractionToggle.checked;
             };
 
             //设置input的max属性
