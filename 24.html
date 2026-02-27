@@ -367,54 +367,32 @@
                 setResult('answer', uniqueSolutions(solutions).join('<br>'));
             }
 
-            //清空
-            window.clearInputs = function() {
-                DOM.num1.value =
-                    DOM.num2.value =
-                    DOM.num3.value =
-                    DOM.num4.value = '';
-                DOM.result.className = 'result';
-                DOM.result.innerHTML = '';
-                solutions = [];
-            };
-
-            //随机生成有解的数字
-            window.randomNums = function() {
-                var nums, result;
-                do {
-                    nums = [];
-                    for (var i = 0; i < 4; i++) {
-                        nums.push(Math.floor(Math.random() * MAX_NUM) + 1);
-                    }
-                    result = solve(nums);
-                } while (result.length === 0);
-                DOM.num1.value = nums[0];
-                DOM.num2.value = nums[1];
-                DOM.num3.value = nums[2];
-                DOM.num4.value = nums[3];
-                solutions = result;
-                setResult('success', '有解，点击查看答案', showAnswer);
-            };
-
             //检查解法是否包含分数
             function hasFractionSolution() {
                 if (solutions.length === 0) return false;
                 
-                //检查是否只有一种解法
-                var uniqueSols = uniqueSolutions(solutions);
-                if (uniqueSols.length !== 1) return false;
-                
-                //检查唯一解法是否包含除法
-                var solution = uniqueSols[0];
-                if (solution.indexOf('/') === -1) return false;
-                
-                try {
-                    // 使用自定义的表达式计算器，检查中间结果
-                    return containsFractionInExpression(solution);
-                } catch (e) {
-                    // 解析错误，假设不包含分数
-                    return false;
+                //检查是否所有解法都包含分数
+                for (var i = 0; i < solutions.length; i++) {
+                    var solution = solutions[i];
+                    
+                    //如果解法不包含除法，肯定不包含分数
+                    if (solution.indexOf('/') === -1) {
+                        return false;
+                    }
+                    
+                    try {
+                        // 使用自定义的表达式计算器，检查中间结果
+                        if (!containsFractionInExpression(solution)) {
+                            return false;
+                        }
+                    } catch (e) {
+                        alert('解法包含无效的表达式：' + solution);
+                        return false;
+                    }
                 }
+                
+                //所有解法都包含分数
+                return true;
             }
             
             // 检查表达式是否包含分数
@@ -507,14 +485,45 @@
                 // 所有中间结果都是整数
                 return false;
             }
+
+            //清空
+            window.clearInputs = function() {
+                DOM.num1.value =
+                    DOM.num2.value =
+                    DOM.num3.value =
+                    DOM.num4.value = '';
+                DOM.result.className = 'result';
+                DOM.result.innerHTML = '';
+                solutions = [];
+            };
+
+            //随机生成有解的数字
+            window.randomNums = function() {
+                var nums, result;
+                do {
+                    nums = [];
+                    for (var i = 0; i < 4; i++) {
+                        nums.push(Math.floor(Math.random() * MAX_NUM) + 1);
+                    }
+                    result = solve(nums);
+                } while (result.length === 0);
+                DOM.num1.value = nums[0];
+                DOM.num2.value = nums[1];
+                DOM.num3.value = nums[2];
+                DOM.num4.value = nums[3];
+                solutions = uniqueSolutions(result);
+                setResult('success', '有解，点击查看答案', showAnswer);
+            };
             
             //验证
             window.verify = function() {
-                var nums = getNumbers();
+                var nums = getNumbers(),
+                    result;
                 if (!nums) {
                     return setResult('error', '请输入1-' + MAX_NUM + '之间的整数');
                 }
-                solutions = solve(nums);
+                result = solve(nums);
+                solutions = uniqueSolutions(result);
                 if (solutions.length > 0) {
                     if (hasFractionSolution()) {
                         setResult('success', '有解（唯一解法含分数），点击查看答案', showAnswer);
